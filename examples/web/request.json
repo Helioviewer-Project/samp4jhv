@@ -1,0 +1,23 @@
+{
+    "org.helioviewer.jhv.request.image": [
+        {
+            "startTime": "2012-03-06T12:00:00",
+            "endTime": "2012-03-06T20:00:00",
+            "dataset": "AIA 304"
+        },
+        {
+            "server": "ROB",
+            "startTime": "2016-03-06T12:00:00",
+            "endTime": "2016-03-06T20:00:00",
+            "dataset": "AIA 171"
+        },
+    ],
+    "org.helioviewer.jhv.request.timeline": [
+        {
+            "timeline": "GOES_XRSA_ODI"
+        },
+        {
+            "timeline": "GOES_XRSB_STAFF"
+        }
+    ]
+}
