@@ -117,7 +117,7 @@ def get_flare_list(start, end, source='NASA', file_format="hessi_flare_list_%Y%m
             result = result.append(read_flare_list_file(source + file), ignore_index=True)
         except HTTPError as e:
             if e.code == 404:
-                warnings.warn("Skipped: " + file + " (" + e.code + " " + e.msg + ")")
+                warnings.warn("Skipped: " + file + " (" + str(e.code) + " " + e.msg + ")")
             else:
                 raise
 
@@ -155,11 +155,6 @@ def read_flare_list_file(file):
     ``pandas.DataFrame``
         out : ``pandas.DataFrame`` containing the parsed flares.
 
-    Examples
-    --------
-    >>> import sunpy.instr.rhessi as rhessi
-    >>> rhessi.read_flare_list_file("https://hesperia.gsfc.nasa.gov/hessidata/dbase/hessi_flare_list_201802.fits")
-
     References
     ----------
     https://hesperia.gsfc.nasa.gov/rhessi3/data-access/rhessi-data/flare-list/index.html
@@ -184,7 +179,7 @@ def read_flare_list_file(file):
         # add reformatted and calculated fields
         result_row["FLAGS_FORMATTED"] = " ".join(_convert_flag_dict(result_row['FLAGS']))
         result_row["DURATION"] = int(round((result_row['END_TIME'] - result_row['START_TIME']).to_value("sec")))
-        result_row["POS_RADIAL"] = int(round((result_row['POSITION'][0] ** 2 + result_row['POSITION'][1] ** 2) ** 0.5)),
+        result_row["POS_RADIAL"] = int(round((result_row['POSITION'][0] ** 2 + result_row['POSITION'][1] ** 2) ** 0.5))
         results.append(result_row)
 
     return pd.DataFrame(results)

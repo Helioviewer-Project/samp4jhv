@@ -25,3 +25,7 @@ def read_limb_flares(flare_list=DEFAULT_LIMB_FLARE_LOCATION):
             flares.append(datetime.strptime(cell[1] + "T" + cell[2], "%Y %b %dT%H:%M:%S"))
 
     return flares
+
+
+def calc_is_limb_flare(df):
+    return df
