@@ -7,7 +7,7 @@ from astropy.samp import SAMPIntegratedClient
 __all__ = ["send_map_layers_to_samp"]
 
 
-def send_map_layers_to_samp(maps, defer_cleanup_s=3):
+def send_map_layers_to_samp(maps, defer_cleanup_s=5):
     client = SAMPIntegratedClient()
     client.connect()
     params = {}
