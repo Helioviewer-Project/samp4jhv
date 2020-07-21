@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from urllib.error import HTTPError
+from collections.abc import Iterable
 
 import sunpy.io.fits
 from sunpy.time import parse_time
@@ -123,20 +124,13 @@ def get_flare_list(start, end, source='NASA', file_format="hessi_flare_list_%Y%m
 
     # filter results for more detailed time constraints (if applicable)
     if len(end) < 8:
-        end_dt += relativedelta(months=+1)  # add month if no further constraints were defined
+        end_dt += relativedelta(months=+1, microseconds=-1)  # add month -1ms to address inclusive right bound
     elif len(end) <= 10:
-        end_dt += relativedelta(days=+1)  # add day if end date was specified on a day-basis
-    else:
-        end_dt += relativedelta(microsecond=+1)  # add 1ms so "smaller" operator works as intended
+        end_dt += relativedelta(days=+1, microseconds=-1)  # add day if end date was specified on a day-basis
 
-    # TODO as the data is sorted we can use the much faster searchsorted func
-    # sth like this:
-    # left_bound = fl['END_TIME'].searchsorted(flares[0], 'left')
-    # right_bound = fl['START_TIME'].searchsorted(flares[0], 'right')
-    # fl[left_bound:right_bound]
-    result = result[result['END_TIME'] >= start_dt]
-    result = result[result['START_TIME'] < end_dt]
-    return result
+    left_bound = result['END_TIME'].searchsorted(start_dt, 'left')  # END_TIME >= start_dt
+    right_bound = result['START_TIME'].searchsorted(end_dt, 'right')  # START_TIME <= end_dt  (inclusive)
+    return result[left_bound:right_bound]
 
 
 def read_flare_list_file(file):
@@ -162,23 +156,23 @@ def read_flare_list_file(file):
     fits = sunpy.io.fits.read(file)
 
     results = []
+    time_offset = parse_time(0, format="utime").to_value("unix")
     for row in fits[3].data:
         result_row = {}
         for k in fits[3].data.columns.names:
             if k.endswith('_TIME'):
-                result_row[k] = parse_time(row[k], format="utime")
-                result_row[k].format = "datetime"  # for human readable display inside the DF
+                if isinstance(row[k], Iterable):
+                    result_row[k] = [datetime.utcfromtimestamp(t + time_offset) for t in row[k]]  # BCK_, IMAGE_
+                else:
+                    result_row[k] = datetime.utcfromtimestamp(row[k] + time_offset)  # START_, END_, PEAK_
             elif k == 'FLAGS':
-                flags = {}
-                for i, fid in zip(row[k], fits[2].data['FLAG_IDS'][0]):
-                    flags[fid] = i
-                result_row[k] = flags
+                result_row[k] = {fid: i for (i, fid) in zip(row[k], fits[2].data['FLAG_IDS'][0])}
             else:
                 result_row[k] = row[k]
 
         # add reformatted and calculated fields
         result_row["FLAGS_FORMATTED"] = " ".join(_convert_flag_dict(result_row['FLAGS']))
-        result_row["DURATION"] = int(round((result_row['END_TIME'] - result_row['START_TIME']).to_value("sec")))
+        result_row["DURATION"] = int(round((result_row['END_TIME'] - result_row['START_TIME']).total_seconds()))
         result_row["POS_RADIAL"] = int(round((result_row['POSITION'][0] ** 2 + result_row['POSITION'][1] ** 2) ** 0.5))
         results.append(result_row)
 
