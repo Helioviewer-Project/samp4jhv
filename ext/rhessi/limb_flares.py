@@ -21,7 +21,7 @@ def read_limb_flares(flare_list=DEFAULT_LIMB_FLARE_LOCATION):
     for line in lines:
         cell = line.split(
             "\t")  # 1, 2002 Mar 07, 17:50:44, C2.5, -961.5, -176.4, 21.4, 11.6, 5.86, 32.0, 10.1, 4.56, -0.4, 0.77, 12,
-        if len(cell) > 2:
+        if len(cell) > 2 and cell[0].isnumeric() and len(cell[1]) > 4:
             flares.append(datetime.strptime(cell[1] + "T" + cell[2], "%Y %b %dT%H:%M:%S"))
 
     return flares

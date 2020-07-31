@@ -121,6 +121,8 @@ def get_flare_list(start, end, source='NASA', file_format="hessi_flare_list_%Y%m
                 warnings.warn("Skipped: " + file + " (" + str(e.code) + " " + e.msg + ")")
             else:
                 raise
+        except FileNotFoundError as e:
+            warnings.warn("Skipped: " + file + " (file not found)")
 
     # filter results for more detailed time constraints (if applicable)
     if len(end) < 8:
