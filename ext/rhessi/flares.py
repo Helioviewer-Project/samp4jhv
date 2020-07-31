@@ -1,10 +1,10 @@
 import warnings
 import pandas as pd
+import numpy as np
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from urllib.error import HTTPError
-from collections.abc import Iterable
 
 import sunpy.io.fits
 from sunpy.time import parse_time
@@ -154,29 +154,24 @@ def read_flare_list_file(file):
     https://hesperia.gsfc.nasa.gov/rhessi3/data-access/rhessi-data/flare-list/index.html
     """
     fits = sunpy.io.fits.read(file)
+    d = fits[3].data
+    rd = {}  # result dict
+    for k in d.columns.names:
+        if k in ["BCK_TIME", "IMAGE_TIME", "START_TIME", "END_TIME", "PEAK_TIME"]:
+            rd[k] = parse_time(d[k], format="utime").to_value('datetime').tolist()
+        elif k == 'FLAGS':
+            rd[k] = [{fid: j for (j, fid) in zip(d[i][k], fits[2].data['FLAG_IDS'][0])} for i in range(len(d))]
+            rd["FLAGS_FORMATTED"] = [" ".join(_convert_flag_dict(dct)) for dct in rd['FLAGS']]
+        elif k in ["FILENAME", "GOES_CLASS", "ALT_ID"]:
+            rd[k] = np.char.strip(d[k]).tolist()
+        else:
+            rd[k] = d[k].tolist()
 
-    results = []
-    time_offset = parse_time(0, format="utime").to_value("unix")
-    for row in fits[3].data:
-        result_row = {}
-        for k in fits[3].data.columns.names:
-            if k.endswith('_TIME'):
-                if isinstance(row[k], Iterable):
-                    result_row[k] = [datetime.utcfromtimestamp(t + time_offset) for t in row[k]]  # BCK_, IMAGE_
-                else:
-                    result_row[k] = datetime.utcfromtimestamp(row[k] + time_offset)  # START_, END_, PEAK_
-            elif k == 'FLAGS':
-                result_row[k] = {fid: i for (i, fid) in zip(row[k], fits[2].data['FLAG_IDS'][0])}
-            else:
-                result_row[k] = row[k]
+    # add reformatted and calculated fields
+    rd['DURATION'] = [int(round(d[i]['END_TIME'] - d[i]['START_TIME'])) for i in range(len(d))]
+    rd['POS_RADIAL'] = [int(round((d[i]['POSITION'][0] ** 2 + d[i]['POSITION'][1] ** 2) ** 0.5)) for i in range(len(d))]
 
-        # add reformatted and calculated fields
-        result_row["FLAGS_FORMATTED"] = " ".join(_convert_flag_dict(result_row['FLAGS']))
-        result_row["DURATION"] = int(round((result_row['END_TIME'] - result_row['START_TIME']).total_seconds()))
-        result_row["POS_RADIAL"] = int(round((result_row['POSITION'][0] ** 2 + result_row['POSITION'][1] ** 2) ** 0.5))
-        results.append(result_row)
-
-    return pd.DataFrame(results)
+    return pd.DataFrame.from_dict(rd)
 
 
 def print_flare_list(data_frame):
