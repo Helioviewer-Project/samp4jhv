@@ -3,16 +3,16 @@ from bs4 import BeautifulSoup
 import warnings
 
 
-__all__ = ["get_image_cube_url"]
+__all__ = ["IC_ALGO", "get_image_cube_url", "get_img_preview_url"]
 
 
-ALG_FILES = {
-    "BACK_PROJECTION": 'bproj',
-    "CLEAN": 'clean',
-    "CLEAN_59": 'clean59',
-    "MEM_GE": 'ge',
-    "VIS_CS": 'vis_cs',
-    "VIS_FWDFIT": 'vf',
+IC_ALGO = {
+    "bproj_image": "BACK_PROJECTION",
+    "clean": "CLEAN",
+    "clean59": "CLEAN_59",
+    "ge": "MEM_GE",
+    "vis_cs": "VIS_CS",
+    "vf": "VIS_FWDFIT",
 }
 
 
@@ -47,11 +47,11 @@ def _get_best_matching_subfolder(url, expected_folder, filter_func=lambda x: Tru
     return best_match
 
 
-def get_image_cube_url(flare, alg="CLEAN", base_url="https://hesperia.gsfc.nasa.gov/rhessi_extras/flare_images"):
+def get_image_cube_url(flare, algo="clean", base_url="https://hesperia.gsfc.nasa.gov/rhessi_extras/imagecube_fits"):
     """ get respective file from gsfc archive
 
     :param flare: flare object, e.g. df.iloc[0]
-    :param alg: reconstruction algorithm. one of ALGO_FILENAMES
+    :param algo: reconstruction algorithm. one of ALGO_FILENAMES
     :param base_url: base url for image cube archive
     :return: url
     """
@@ -61,14 +61,23 @@ def get_image_cube_url(flare, alg="CLEAN", base_url="https://hesperia.gsfc.nasa.
     start = flare["START_TIME"].strftime("%H%M")
     start2 = int(start) + (1 if int(flare["START_TIME"].strftime("%S")) >= 30 else 0)
     end = flare["END_TIME"].strftime("%H%M")
-    file_prefix = f"hsi_imagecube_{ALG_FILES[alg]}_{y}{m}{d}_{start2}_"
+    file_prefix = f"hsi_imagecube_{algo}_{y}{m}{d}_{start2}_"
 
     url = f"{base_url}/{y}/{m}/{d}/"
-    url += _get_best_matching_subfolder(url, f"{y}{m}{d}_{start}_{end}") + alg + "/"
+    url += _get_best_matching_subfolder(url, f"{y}{m}{d}_{start}_{end}")
     url += _get_best_matching_subfolder(url, file_prefix, lambda x: x.endswith(".fits"))
 
     if not url.endswith(".fits"):
         warnings.warn(f"no image cube fits file found for this flare. Check: {url}")
         return ""
+    return url
 
+
+def get_img_preview_url(fits_url, algo="clean", file_prefix="hsi_image_panels_scaled_"):
+    base = fits_url.rsplit("/", 1)[0].replace("/imagecube_fits/", "/flare_images/") + "/" + IC_ALGO[algo] + "/"
+    url = base + _get_best_matching_subfolder(base, file_prefix, lambda x: x.endswith(".jpeg"))
+    
+    if not url.endswith(".jpeg"):
+        warnings.warn(f"no image preview found for this flare. Check: {url}")
+        return ""
     return url
