@@ -8,13 +8,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i", "--input", required=True, metavar="file", help="input JHV request file"
 )
+parser.add_argument("-value", help="Send request as message value", action="store_true")
 args = parser.parse_args()
+
+input_file = os.path.abspath(args.input)
 
 client = SAMPIntegratedClient()
 client.connect()
 
 params = {}
-params["url"] = os.path.abspath(args.input)
+
+if args.value:
+    with open(input_file, "r") as f:
+        params["value"] = f.read()
+else:
+    params["url"] = input_file
 
 message = {}
 message["samp.mtype"] = "jhv.load.request"
