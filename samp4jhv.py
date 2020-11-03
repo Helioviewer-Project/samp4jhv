@@ -1,31 +1,39 @@
 from os import unlink as del_file
-import time
 from tempfile import NamedTemporaryFile
 from astropy.samp import SAMPIntegratedClient
 
 
-__all__ = ["send_map_layers_to_samp"]
+__all__ = ["SAMP4JHVClient"]
 
 
-def send_map_layers_to_samp(maps, defer_cleanup_s=5):
-    client = SAMPIntegratedClient()
-    client.connect()
-    params = {}
-    message = {"samp.mtype": "jhv.load.image", "samp.params": params}
+class SAMP4JHVClient:
+    def __init__(self):
+        self.client = SAMPIntegratedClient()
+        self.tmp_files = []
 
-    tmp_files = []
-    for energy_band in maps:
+    def send_image_maps(self, maps):
+        """ Takes a list of SunPy Map objects, saves them to disk one by one and sends the file-locations to JHV """
+        
+        params = {}
         params["url"] = []
-        for i in range(len(maps[energy_band])):
+        for m in maps:
             f = NamedTemporaryFile(delete=False, suffix=".fits")
             f.close()
-            maps[energy_band][i].save(f.name)
-            tmp_files.append(f.name)
+            m.save(f.name)
+            self.tmp_files.append(f.name)
             # use file:/// workaround for windows as JHV currently can't handle windows paths
             params["url"].append(("file:///" + f.name.replace("\\", "/")) if f.name.find("\\") >= 0 else f.name)
-        client.notify_all(message)  # message holds a reference to params which is updated in the loop
-    client.disconnect()
 
-    time.sleep(defer_cleanup_s)  # wait to make sure JHV could read the files before they're removed
-    for filename in tmp_files:
-        del_file(filename)  # cleanup
+        self.client.connect()
+        self.client.notify_all({"samp.mtype": "jhv.load.image", "samp.params": params})
+        self.client.disconnect()
+
+    def remove_tmp_files(self):
+        """ Removes temporary files that were created for JHV to be read.
+        Mind that after calling this function, the images might not be available in JHV anymore
+        due to JHVs internal memory management, that might require to re-read the files at some point.
+        """
+        
+        for f in self.tmp_files:
+            del_file(f)  # cleanup
+

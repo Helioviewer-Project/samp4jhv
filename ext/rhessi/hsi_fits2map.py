@@ -6,7 +6,7 @@ from sunpy.map import Map
 __all__ = ["hsi_fits2map"]
 
 
-def hsi_fits2map(url):
+def hsi_fits2map(url, crop_min=-1e10, crop_max=1e10):
     f = read(url)
     header = f[0].header
     del header["CROTACN1"]
@@ -19,6 +19,9 @@ def hsi_fits2map(url):
         for e in range(len(f[1].data[0]["ENERGY_AXIS"])):
             d_min = min(d_min, f[0].data[t][e].min())
             d_max = max(d_max, f[0].data[t][e].max())
+    # crop
+    d_min = max(d_min, crop_min)
+    d_max = min(d_max, crop_max)
 
     maps = {}  # result dictionary
     for e in f[1].data[0]["ENERGY_AXIS"].astype('int'):
