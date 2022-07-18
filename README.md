@@ -5,6 +5,10 @@ SAMP library to interact with JHV
 scripts showing examples of how to interact with JHV
 
 ### python
+
+#### 2021-05 Extract images from IRIS SJI cubes.ipynb
+Example script to load IRIS images from TAP source and extract them into single images, with slight modifications for optimal display in JHV.
+
 #### 2021-10-04-Send-RHESSI_to_JHV_via_SAMP.ipynb
 Example script to download RHESSI image cubes from TAP source, extract images and send them to JHV:
 1. retrieve data from TAP service using `pyvo`
