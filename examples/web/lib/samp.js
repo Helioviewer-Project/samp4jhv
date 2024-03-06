@@ -362,7 +362,7 @@ var samp = (function() {
     // If absent, the default SAMP Web Profile server is used.
     var XmlRpcClient = function(endpoint) {
         this.endpoint = endpoint ||
-                        "http://localhost:" + WEBSAMP_PORT + WEBSAMP_PATH;
+                        "http://127.0.0.1:" + WEBSAMP_PORT + WEBSAMP_PATH;
     };
 
     // Creates an XHR facade - an object that presents an interface
