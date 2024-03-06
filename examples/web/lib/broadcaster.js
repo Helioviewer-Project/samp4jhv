@@ -66,7 +66,7 @@
    }
 
    var toUrl = function(href) {
-      if (href.match(/^http:\/\/.*/) || href.match(/^ftp:\/\/.*/)) {
+      if (href.match(/^https:\/\/.*/) || href.match(/^http:\/\/.*/) || href.match(/^ftp:\/\/.*/)) {
          return href;
       }
       if (href.match(/^\/.*/)) {
