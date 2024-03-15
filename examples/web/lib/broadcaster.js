@@ -13,9 +13,14 @@
    var baseUrl = window.location.href.toString().
                         replace(new RegExp("[^/]*$"), "");
 
-   var loadAction = function(mtype, url) {
+   var loadAction = function(mtype, url, value) {
       return function() {
-         var message = new samp.Message(mtype, {"url": url});
+         let message;
+         if (value) {
+	     message = new samp.Message(mtype, {"value": value});
+         } else {
+             message = new samp.Message(mtype, {"url": url});
+         }
          var regSuccessHandler = function(conn) {
              connector.setConnection(conn);
              conn.notifyAll([message]);
@@ -88,11 +93,12 @@
          var url = toUrl(aEl.href);
          var sendName = aEl.hasAttribute("sendname")
                       ? aEl.getAttribute("sendname") : "Broadcast";
+         var value = aEl.getAttribute('data-json');
          sendButt = document.createElement("button");
          sendButt.setAttribute("type", "button");
          sendButt.className = sendClass;
          sendButt.appendChild(document.createTextNode(sendName));
-         sendButt.onclick = loadAction(mtype, url);
+         sendButt.onclick = loadAction(mtype, url, value);
          aEl.parentNode.insertBefore(sendButt, aEl.nextSibling);
          aEl.parentNode.insertBefore(document.createTextNode(" "), sendButt);
       }
